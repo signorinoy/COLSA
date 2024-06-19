@@ -1,14 +1,10 @@
----
-title: "COLSA pacakge"
-subtitle: "A package for Privacy enhanced collaborative inference in the Cox proportional hazards model for distributed data"
-author: "Vignette Author"
-date: "2024-06-19"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{Vignette Title}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
+COLSA package
+==========
+### A package for Privacy enhanced collaborative inference in the Cox proportional hazards model for distributed data
+#### Mengtong Hu
+
+#### 2024-06-19
+
 
 
 
@@ -17,7 +13,7 @@ This is a tutorial for using the COLSA package designed for analyzing distribute
 # Install Pacakges
 
 ```r
-devtools::load_all() 
+devtools::install_github("https://github.com/CollaborativeInference/COLSA") 
 #> ℹ Loading colsa
 library(survival)
 ```
