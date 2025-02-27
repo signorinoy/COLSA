@@ -12,76 +12,69 @@
 #'
 #' @examples
 updateCOLSA.demo <-
+  function(B, data, init = NA, p, npar, boundaryknots) {
+    sum2 <- diag(0, p, p)
+    tol <- 1e-5
+    max_iter <- 10000
+    negl <- 0
+    if (sum(is.na(init)) > 1) {
+      init <- rep(0, p)
+    }
+    betahat <- init
 
-  function(B, data, init=NA, p,npar,boundaryknots){
-
-    sum2<-diag(0,p,p);
-    tol=1e-5;
-    max_iter=10000;
-    negl<-0
-    if(sum(is.na(init))>1){init<-rep(0,p)}
-    betahat<-init;
-
-    for(b in 1:B){
-      subdata= subset(data,group==b)
+    for (b in 1:B) {
+      subdata <- subset(data, group == b)
       t <- subdata$time
       d <- subdata$status
-      X = as.matrix(subdata[,4:(4+npar-1)])
+      X <- as.matrix(subdata[, 4:(4 + npar - 1)])
+
+      betahat_old <- betahat
+
+      H <- ddloglik_eval.hazard(betahat, t, d, X, boundaryknots)
+
+      U <- chol(sum2 + H)
+      L <- t(U)
+
+      for (r in 1:max_iter) {
+        g_0 <- -dloglik_eval.hazard(betahat, t, d, X, boundaryknots)
+        g_1 <- -t(crossprod((betahat - betahat_old), sum2))
+
+        g <- g_0 + g_1
+
+        d_beta <- backsolve(U, forwardsolve(L, g))
+        df_beta <- crossprod(g, d_beta)
 
 
-
-
-
-      betahat_old=betahat;
-
-      H<-ddloglik_eval.hazard(betahat,t,d,X,boundaryknots)
-
-      U=chol(sum2+H)
-      L=t(U)
-
-      for (r in 1:max_iter){
-
-        g_0=-dloglik_eval.hazard(betahat,t,d,X,boundaryknots)
-        g_1=-t(crossprod((betahat-betahat_old),sum2));
-
-        g=g_0+g_1;
-
-        d_beta=backsolve(U,forwardsolve(L,g))
-        df_beta=crossprod(g,d_beta);
-
-
-        if (abs(df_beta)<tol){
+        if (abs(df_beta) < tol) {
           break
-        }else {
-          betahat=betahat+d_beta;
+        } else {
+          betahat <- betahat + d_beta
         }
 
 
-        H<-ddloglik_eval.hazard(betahat,t,d,X,boundaryknots) #J2
+        H <- ddloglik_eval.hazard(betahat, t, d, X, boundaryknots) # J2
 
-        U=chol(sum2+H)
-        L=t(U)
+        U <- chol(sum2 + H)
+        L <- t(U)
       }
 
-      H_new<-ddloglik_eval.hazard(betahat,t,d,X,boundaryknots)
+      H_new <- ddloglik_eval.hazard(betahat, t, d, X, boundaryknots)
 
-      sum2<-sum2+H_new
-      negl<-negl+density_surv_spline_eval.hazard(betahat,t,d,X,boundaryknots)
+      sum2 <- sum2 + H_new
+      negl <- negl + density_surv_spline_eval.hazard(betahat, t, d, X, boundaryknots)
     }
 
 
-      sd<-sqrt(diag(solve(sum2)));
+    sd <- sqrt(diag(solve(sum2)))
 
-    pvalue<-2*pnorm(-abs(betahat)/sd)
-    result<-cbind(betahat=betahat,sd=sd,pvalue=pvalue,negll=negl)#
-    colnames(result)<-c("Estimates","Std.Errors","p-values","neg-logll")#
-    if(r == max_iter){
+    pvalue <- 2 * pnorm(-abs(betahat) / sd)
+    result <- cbind(betahat = betahat, sd = sd, pvalue = pvalue, negll = negl) #
+    colnames(result) <- c("Estimates", "Std.Errors", "p-values", "neg-logll") #
+    if (r == max_iter) {
       stop("maximum iterations reached")
-      result<-cbind(betahat=rep(NA,length(betahat)),sd=rep(NA,length(sd)),pvalue=rep(NA,length(pvalue)),negll=rep(NA,length(negl)))#
-
+      result <- cbind(betahat = rep(NA, length(betahat)), sd = rep(NA, length(sd)), pvalue = rep(NA, length(pvalue)), negll = rep(NA, length(negl))) #
     }
     return(result)
-
   }
 #' COLSA update function for distributed datasets
 #'
@@ -95,79 +88,95 @@ updateCOLSA.demo <-
 #' @export
 #'
 #' @examples
-updateCOLSA.outloop <-
-  function(subdata, statistics, p,npar,boundaryknots){
+updateCOLSA.outloop <- function(subdata, statistics, p, npar, boundaryknots) {
+  tol <- 1e-5
+  max_iter <- 10000
+  negl <- statistics$negl
 
+  init <- statistics$betahat
+  sum2 <- statistics$Hessian
 
-    tol=1e-5;
-    max_iter=10000;
-    negl = statistics$negl
-
-    init = statistics$betahat
-    sum2 = statistics$Hessian
-
-    if(sum(is.na(init))>1){init<-rep(0,p)}
-    betahat<-init;
-    if(sum(is.na(sum2))>=1){sum2<-diag(0,p,p)}
-
-
-      t <- subdata$time
-      d <- subdata$status
-      X = as.matrix(subdata[,4:(4+npar-1)])
-
-
-
-
-
-      betahat_old=betahat;
-
-      H<-ddloglik_eval.hazard(betahat,t,d,X,boundaryknots)
-
-      U=chol(sum2+H)
-      L=t(U)
-
-      for (r in 1:max_iter){
-
-        g_0=-dloglik_eval.hazard(betahat,t,d,X,boundaryknots)
-        g_1=-t(crossprod((betahat-betahat_old),sum2));
-
-        g=g_0+g_1;
-
-        d_beta=backsolve(U,forwardsolve(L,g))
-        df_beta=crossprod(g,d_beta);
-
-
-        if (abs(df_beta)<tol){
-          break
-        }else {
-          betahat=betahat+d_beta;
-        }
-
-
-        H<-ddloglik_eval.hazard(betahat,t,d,X,boundaryknots) #J2
-
-        U=chol(sum2+H)
-        L=t(U)
-      }
-
-      H_new<-ddloglik_eval.hazard(betahat,t,d,X,boundaryknots)
-
-      sum2<-sum2+H_new
-      negl<-negl+density_surv_spline_eval.hazard(betahat,t,d,X,boundaryknots)
-
-
-
-    sd<-sqrt(diag(solve(sum2)));
-
-    pvalue<-2*pnorm(-abs(betahat)/sd)
-    result<-cbind(betahat=betahat,sd=sd,pvalue=pvalue,negll=negl)#
-    colnames(result)<-c("Estimates","Std.Errors","p-values","neg-logll")#
-    if(r == max_iter){
-      stop("maximum iterations reached")
-      result<-cbind(betahat=rep(NA,length(betahat)),sd=rep(NA,length(sd)),pvalue=rep(NA,length(pvalue)),negll=rep(NA,length(negl)))#
-
-    }
-    statistics = list(betahat = betahat,Hessian = sum2,negl=negl)
-    return(list(result=result,statistics = statistics))
-
+  if (sum(is.na(init)) > 1) {
+    init <- rep(0, p)
   }
+  betahat <- init
+  if (sum(is.na(sum2)) >= 1) {
+    sum2 <- diag(0, p, p)
+  }
+
+  # check if the number of basis functions has changed
+  degree_old <- length(betahat) - npar - 1
+  degree <- p - npar - 1
+
+  if (degree < degree_old) {
+    stop("The degree of the Bernstein polynomial has decreased")
+  }
+  while (degree > degree_old) {
+    degree_old <- degree_old + 1
+    prox <- matrix(0, degree_old + 1, degree_old)
+    diag(prox) <- (degree_old - 0:(degree_old - 1)) / degree_old
+    diag(prox[-1, ]) <- (1:degree_old) / degree_old
+    prox <- rbind(
+      cbind(prox, matrix(0, degree_old + 1, npar)),
+      cbind(matrix(0, npar, degree_old), diag(npar))
+    )
+    betahat <- as.vector(prox %*% betahat)
+    sum2 <- prox %*% sum2 %*% t(prox)
+  }
+
+  t <- subdata$time
+  d <- subdata$status
+  X <- as.matrix(subdata[, 4:(4 + npar - 1)])
+
+  betahat_old <- betahat
+
+  H <- ddloglik_eval.hazard(betahat, t, d, X, boundaryknots)
+
+  U <- chol(sum2 + H)
+  L <- t(U)
+
+  for (r in 1:max_iter) {
+    g_0 <- -dloglik_eval.hazard(betahat, t, d, X, boundaryknots)
+    g_1 <- -t(crossprod((betahat - betahat_old), sum2))
+
+    g <- g_0 + g_1
+
+    d_beta <- backsolve(U, forwardsolve(L, g))
+    df_beta <- crossprod(g, d_beta)
+
+
+    if (abs(df_beta) < tol) {
+      break
+    } else {
+      betahat <- betahat + d_beta
+    }
+
+
+    H <- ddloglik_eval.hazard(betahat, t, d, X, boundaryknots) # J2
+
+    U <- chol(sum2 + H)
+    L <- t(U)
+  }
+
+  H_new <- ddloglik_eval.hazard(betahat, t, d, X, boundaryknots)
+
+  sum2 <- sum2 + H_new
+  negl <- negl + density_surv_spline_eval.hazard(betahat, t, d, X, boundaryknots)
+
+  sd <- sqrt(diag(solve(sum2)))
+
+  pvalue <- 2 * pnorm(-abs(betahat) / sd)
+  result <- cbind(betahat = betahat, sd = sd, pvalue = pvalue, negll = negl)
+  colnames(result) <- c("Estimates", "Std.Errors", "p-values", "neg-logll")
+  if (r == max_iter) {
+    stop("maximum iterations reached")
+    result <- cbind(
+      betahat = rep(NA, length(betahat)),
+      sd = rep(NA, length(sd)),
+      pvalue = rep(NA, length(pvalue)),
+      negll = rep(NA, length(negl))
+    )
+  }
+  statistics <- list(betahat = betahat, Hessian = sum2, negl = negl)
+  return(list(result = result, statistics = statistics))
+}
