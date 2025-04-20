@@ -1,4 +1,7 @@
 .Rproj.user
-.Rbuildignore
-.RData
 .Rhistory
+.Rdata
+.httr-oauth
+.DS_Store
+.quarto
+docs
