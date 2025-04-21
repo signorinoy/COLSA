@@ -38,17 +38,18 @@ objective <- function(par, time, status, x, boundary, theta, hessian_prev) {
   n_basis_pre <- n_parameters_pre - n_features
 
   # Transform the parameters and Hessian matrix from n_basis_pre to n_basis
-  prox <- prox_reverse(n_basis_pre, n_basis)
+  prox <- prox_forward(n_basis, n_basis_pre)
   prox <- rbind(
     cbind(prox, matrix(0, nrow(prox), n_features)),
     cbind(matrix(0, n_features, ncol(prox)), diag(n_features))
   )
-  theta <- as.vector(prox %*% theta)
-  hessian <- prox %*% hessian_prev %*% t(prox)
+  par_prev <- as.vector(prox %*% par)
 
-  loss1 <- as.numeric((par - theta) %*% hessian %*% (par - theta) / 2)
-  grad1 <- as.vector(hessian %*% (par - theta))
-  hess1 <- hessian
+  loss1 <- as.numeric(
+    (par_prev - theta) %*% hessian_prev %*% (par_prev - theta) / 2
+  )
+  grad1 <- as.vector(t(prox) %*% hessian_prev %*% (par_prev - theta))
+  hess1 <- t(prox) %*% hessian_prev %*% prox
 
   alpha <- par[seq_len(n_basis)]
   beta <- par[(n_basis + 1):n_parameters]
