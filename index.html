@@ -120,21 +120,21 @@
 <span><span class="co">#&gt; Number of basis functions:  5 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;         coef exp(coef)       se      z        p    </span></span>
-<span><span class="co">#&gt; x1   0.15629   1.16917  0.01006 15.541  &lt; 2e-16 ***</span></span>
-<span><span class="co">#&gt; x2  -0.16807   0.84530  0.02121 -7.924 2.31e-15 ***</span></span>
-<span><span class="co">#&gt; x31  0.38319   1.46696  0.05689  6.735 1.64e-11 ***</span></span>
-<span><span class="co">#&gt; x42  0.28892   1.33499  0.08805  3.281  0.00103 ** </span></span>
-<span><span class="co">#&gt; x43  0.30574   1.35763  0.08028  3.808  0.00014 ***</span></span>
-<span><span class="co">#&gt; x44  0.19363   1.21364  0.07950  2.436  0.01487 *  </span></span>
+<span><span class="co">#&gt; x1   0.15491   1.16755  0.01014 15.283  &lt; 2e-16 ***</span></span>
+<span><span class="co">#&gt; x2  -0.16287   0.84970  0.02137 -7.622 2.51e-14 ***</span></span>
+<span><span class="co">#&gt; x31  0.39355   1.48223  0.05764  6.828 8.61e-12 ***</span></span>
+<span><span class="co">#&gt; x42  0.30047   1.35050  0.08928  3.366 0.000764 ***</span></span>
+<span><span class="co">#&gt; x43  0.31781   1.37412  0.08150  3.900 9.64e-05 ***</span></span>
+<span><span class="co">#&gt; x44  0.20168   1.22345  0.08080  2.496 0.012562 *  </span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
 <span><span class="co">#&gt;     exp(coef) exp(-coef) lower .95 upper .95</span></span>
-<span><span class="co">#&gt; x1  1.1692    0.8553     1.1463    1.1924   </span></span>
-<span><span class="co">#&gt; x2  0.8453    1.1830     0.8109    0.8812   </span></span>
-<span><span class="co">#&gt; x31 1.4670    0.6817     1.3122    1.6400   </span></span>
-<span><span class="co">#&gt; x42 1.3350    0.7491     1.1234    1.5864   </span></span>
-<span><span class="co">#&gt; x43 1.3576    0.7366     1.1600    1.5890   </span></span>
-<span><span class="co">#&gt; x44 1.2136    0.8240     1.0385    1.4183</span></span></code></pre></div>
+<span><span class="co">#&gt; x1  1.1676    0.8565     1.1446    1.1910   </span></span>
+<span><span class="co">#&gt; x2  0.8497    1.1769     0.8148    0.8860   </span></span>
+<span><span class="co">#&gt; x31 1.4822    0.6747     1.3239    1.6595   </span></span>
+<span><span class="co">#&gt; x42 1.3505    0.7405     1.1337    1.6088   </span></span>
+<span><span class="co">#&gt; x43 1.3741    0.7277     1.1713    1.6121   </span></span>
+<span><span class="co">#&gt; x44 1.2235    0.8174     1.0443    1.4334</span></span></code></pre></div>
 <p>Once the final COLSA estimate is obtained, we can construct survival curves for arbitrary covariate values. As a diagnostic step, we plot the estimated baseline cumulative hazard function and compare it to the true cumulative hazard function used in the data-generating process.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/basehaz.html">basehaz</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
