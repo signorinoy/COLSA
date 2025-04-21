@@ -5,6 +5,5 @@
 #' @importFrom MASS ginv
 #' @importFrom statmod gauss.quad.prob
 #' @importFrom survival Surv
-#' @importFrom trust trust
 ## usethis namespace: end
 NULL

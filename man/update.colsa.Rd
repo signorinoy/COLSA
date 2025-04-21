@@ -50,6 +50,6 @@ adjustment of the model parameters and basis functions.
 The function updates the COLSA model by incorporating new data and
 adjusting the number of basis functions dynamically. It ensures that the
 model parameters and Hessian matrix are updated accordingly. The
-optimization process is performed using the \code{trust} package to
+optimization process is performed using the \code{nlm} method to
 maximize the log-likelihood of the updated model.
 }

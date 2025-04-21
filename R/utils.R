@@ -11,7 +11,7 @@
 #' @param x Numeric matrix of covariates (features) for the model.
 #' @param boundary Numeric vector specifying the boundary knots for the splines.
 #' @param theta Numeric vector of prior parameters for regularization.
-#' @param hessian Numeric matrix of prior Hessian for regularization.
+#' @param hessian_prev Numeric matrix of prior Hessian for regularization.
 #'
 #' @return A list containing:
 #'   \item{value}{Scalar value of the objective function.}
@@ -29,7 +29,7 @@
 #' and combines them to return the overall objective value, gradient, and
 #' Hessian. The baseline hazard is integrated using helper functions
 #' (`int_basehaz`) to compute cumulative hazard and its derivatives.
-objective <- function(par, time, status, x, boundary, theta, hessian) {
+objective <- function(par, time, status, x, boundary, theta, hessian_prev) {
   n_parameters <- length(par)
   n_features <- ncol(x)
   n_basis <- n_parameters - n_features
@@ -44,7 +44,7 @@ objective <- function(par, time, status, x, boundary, theta, hessian) {
     cbind(matrix(0, n_features, ncol(prox)), diag(n_features))
   )
   theta <- as.vector(prox %*% theta)
-  hessian <- prox %*% hessian %*% t(prox)
+  hessian <- prox %*% hessian_prev %*% t(prox)
 
   loss1 <- as.numeric((par - theta) %*% hessian %*% (par - theta) / 2)
   grad1 <- as.vector(hessian %*% (par - theta))
@@ -89,11 +89,10 @@ objective <- function(par, time, status, x, boundary, theta, hessian) {
     rbind(dalph_dabeta, d2beta)
   )
 
-  list(
-    value = loss1 + loss2,
-    gradient = grad1 + grad2,
-    hessian = hess1 + hess2
-  )
+  res <- loss1 + loss2
+  attr(res, "gradient") <- grad1 + grad2
+  attr(res, "hessian") <- hess1 + hess2
+  res
 }
 
 #' Compute Integrated Baseline Hazard and Its Derivatives

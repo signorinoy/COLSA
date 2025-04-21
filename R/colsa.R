@@ -49,7 +49,7 @@ Surv <- survival::Surv # nolint: object_name_linter.
 #'                functions.}
 #'   \item{call}{The matched call.}
 #'
-#' @details This function employs the `trust` optimization method to estimate
+#' @details This function employs the `nlm` optimization method to estimate
 #'   the model parameters. If the optimization fails to converge, an error is
 #'   raised. During the pre-estimation stage, parameters are projected to
 #'   mitigate bias introduced in the early stage.
@@ -67,8 +67,7 @@ Surv <- survival::Surv # nolint: object_name_linter.
 #'
 #' @seealso \code{\link{update.colsa}}, \code{\link{summary.colsa}}.
 #'
-#' @importFrom stats model.frame model.response model.matrix
-#' @importFrom trust trust
+#' @importFrom stats model.frame model.response model.matrix nlm
 #'
 #' @export
 colsa <- function(
@@ -105,14 +104,11 @@ colsa <- function(
 
   # Query stage
   idx <- c(seq_len(n_basis), (n_basis_pre + 1):n_parameters)
-  res <- trust::trust(
-    objfun = objective, parinit = theta[idx], rinit = 1, rmax = 10,
+  res <- nlm(
+    f = objective, p = theta[idx],
     time = time, status = status, x = x, boundary = boundary,
-    theta = theta, hessian = hessian
+    theta = theta, hessian_prev = hessian
   )
-  if (!res$converged) {
-    stop("Optimization failed to converge")
-  }
 
   # Pre-estimation stage
   prox <- prox_forward(n_basis, n_basis_pre)
@@ -120,14 +116,14 @@ colsa <- function(
     cbind(prox, matrix(0, nrow(prox), n_features)),
     cbind(matrix(0, n_features, ncol(prox)), diag(n_features))
   )
-  theta <- as.vector(prox %*% res$argument)
+  theta <- as.vector(prox %*% res$estimate)
   obj <- objective(theta, time, status, x, boundary, theta, hessian)
   names(theta) <- c(paste0("Basis", seq_len(n_basis_pre)), colnames(x))
 
   object <- list(
-    logLik = -obj$value,
+    logLik = as.numeric(-obj),
     theta = theta,
-    hessian = obj$hessian,
+    hessian = attr(obj, "hessian"),
     n_basis = c(n_basis),
     n_features = n_features,
     n_samples = n_samples,
@@ -165,7 +161,7 @@ colsa <- function(
 #' @details The function updates the COLSA model by incorporating new data and
 #'   adjusting the number of basis functions dynamically. It ensures that the
 #'   model parameters and Hessian matrix are updated accordingly. The
-#'   optimization process is performed using the \code{trust} package to
+#'   optimization process is performed using the \code{nlm} method to
 #'   maximize the log-likelihood of the updated model.
 #'
 #' @return An updated object of class \code{"colsa"} with the following
@@ -181,8 +177,7 @@ colsa <- function(
 #' }
 #'
 #' @importFrom stats update
-#' @importFrom stats model.frame model.response model.matrix
-#' @importFrom trust trust
+#' @importFrom stats model.frame model.response model.matrix nlm
 #' @importFrom utils tail
 #'
 #' @export
@@ -244,14 +239,11 @@ update.colsa <- function(
     hessian <- prox %*% hessian %*% t(prox)
   }
   idx <- c(seq_len(n_basis), (n_basis_pre + 1):n_parameters)
-  res <- trust::trust(
-    objfun = objective, parinit = theta[idx], rinit = 1, rmax = 10,
+  res <- nlm(
+    f = objective, p = theta[idx],
     time = time, status = status, x = x, boundary = boundary,
-    theta = theta, hessian = hessian
+    theta = theta, hessian_prev = hessian
   )
-  if (!res$converged) {
-    stop("Optimization failed to converge")
-  }
 
   # Pre-estimation Stage
   prox <- prox_forward(n_basis, n_basis_pre)
@@ -259,13 +251,13 @@ update.colsa <- function(
     cbind(prox, matrix(0, nrow(prox), n_features)),
     cbind(matrix(0, n_features, ncol(prox)), diag(n_features))
   )
-  theta <- as.vector(prox %*% res$argument)
+  theta <- as.vector(prox %*% res$estimate)
   obj <- objective(theta, time, status, x, boundary, theta, hessian)
   names(theta) <- c(paste0("Basis", seq_len(n_basis_pre)), colnames(x))
 
-  object$logLik <- -obj$value
+  object$logLik <- as.numeric(-obj)
   object$theta <- theta
-  object$hessian <- obj$hessian
+  object$hessian <- attr(obj, "hessian")
   object$call <- match.call()
   object
 }

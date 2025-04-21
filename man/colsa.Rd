@@ -44,7 +44,7 @@ Performs collaborative inference for the Cox proportional
 hazards model, tailored for distributed data environments.
 }
 \details{
-This function employs the \code{trust} optimization method to estimate
+This function employs the \code{nlm} optimization method to estimate
 the model parameters. If the optimization fails to converge, an error is
 raised. During the pre-estimation stage, parameters are projected to
 mitigate bias introduced in the early stage.

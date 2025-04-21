@@ -146,6 +146,32 @@ curves for arbitrary covariate values. As a diagnostic step, we plot the
 estimated baseline cumulative hazard function and compare it to the true
 cumulative hazard function used in the data-generating process.
 
+``` r
+df <- basehaz(fit)
+df$true <- -log(0.5 * exp(-10 * df$time^3) + 0.5 * exp(-20 * df$time^5))
+lower_col <- grep("lower", names(df), value = TRUE)[1]
+upper_col <- grep("upper", names(df), value = TRUE)[1]
+plot(df$time, df$basehaz,
+  type = "l", lwd = 2, lty = 2,
+  col = "black",
+  xlab = "Time", ylab = "Cumulative Hazard",
+  main = "Estimated vs. True Cumulative Hazard"
+)
+polygon(
+  x = c(df$time, rev(df$time)),
+  y = c(df[[lower_col]], rev(df[[upper_col]])),
+  col = adjustcolor("lightgrey", alpha.f = 0.6),
+  border = NA
+)
+lines(df$time, df$true, col = "red", lwd = 2)
+legend("topleft",
+  legend = c("Estimated", "True", "95% CI"),
+  col = c("black", "red", "lightgrey"), lty = c(2, 1, NA),
+  lwd = c(2, 2, NA), pch = c(NA, NA, 15),
+  pt.cex = 1.5, bty = "n", inset = 0.02
+)
+```
+
 <img src="man/figures/README-evaluate-1.png" width="100%" />
 
 The comparison demonstrates that the COLSA method can effectively

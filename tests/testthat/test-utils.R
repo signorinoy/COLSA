@@ -154,15 +154,13 @@ test_that("objective computes value, gradient, and hessian correctly", {
 
   result <- objective(par, time, status, x, boundary, theta, hessian)
 
-  expect_true(is.list(result))
-  expect_true("value" %in% names(result))
-  expect_true("gradient" %in% names(result))
-  expect_true("hessian" %in% names(result))
+  expect_true(is.numeric(result))
+  expect_true("gradient" %in% names(attributes(result)))
+  expect_true("hessian" %in% names(attributes(result)))
 
-  expect_true(is.numeric(result$value))
-  expect_true(is.numeric(result$gradient))
-  expect_true(is.matrix(result$hessian))
+  expect_true(is.numeric(attr(result, "gradient")))
+  expect_true(is.matrix(attr(result, "hessian")))
 
-  expect_equal(length(result$gradient), length(par))
-  expect_equal(dim(result$hessian), c(length(par), length(par)))
+  expect_equal(length(attr(result, "gradient")), length(par))
+  expect_equal(dim(attr(result, "hessian")), c(length(par), length(par)))
 })

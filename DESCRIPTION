@@ -17,8 +17,7 @@ Imports:
     MASS,
     splines2,
     statmod,
-    survival,
-    trust
+    survival
 Depends: 
     R (>= 3.5)
 LazyData: true

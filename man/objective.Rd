@@ -4,7 +4,7 @@
 \alias{objective}
 \title{Objective Function for Cox Model Optimization}
 \usage{
-objective(par, time, status, x, boundary, theta, hessian)
+objective(par, time, status, x, boundary, theta, hessian_prev)
 }
 \arguments{
 \item{par}{Numeric vector of parameters to be optimized, including spline
@@ -21,7 +21,7 @@ coefficients (\code{beta}).}
 
 \item{theta}{Numeric vector of prior parameters for regularization.}
 
-\item{hessian}{Numeric matrix of prior Hessian for regularization.}
+\item{hessian_prev}{Numeric matrix of prior Hessian for regularization.}
 }
 \value{
 A list containing:
