@@ -56,16 +56,20 @@ incorporating both continuous and categorical covariates.</p>
 <dd><p>Event indicator: 1 for event, 0 for right-censored.</p></dd>
 
 <dt>x1</dt>
-<dd><p>First continuous covariate, generated from a bivariate normal distribution.</p></dd>
+<dd><p>First continuous covariate, generated from a bivariate normal
+distribution.</p></dd>
 
 <dt>x2</dt>
-<dd><p>Second continuous covariate, also from the bivariate normal distribution.</p></dd>
+<dd><p>Second continuous covariate, also from the bivariate normal
+distribution.</p></dd>
 
 <dt>x31</dt>
-<dd><p>First binary categorical covariate, generated from a Bernoulli distribution.</p></dd>
+<dd><p>First binary categorical covariate, generated from a Bernoulli
+distribution.</p></dd>
 
 <dt>x42</dt>
-<dd><p>Dummy variable for level 2 of the second categorical covariate (reference is level 1).</p></dd>
+<dd><p>Dummy variable for level 2 of the second categorical covariate
+(reference is level 1).</p></dd>
 
 <dt>x43</dt>
 <dd><p>Dummy variable for level 3 of the second categorical covariate.</p></dd>
@@ -84,12 +88,13 @@ incorporating both continuous and categorical covariates.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The two continuous covariates <code>x1</code> and <code>x2</code> were independently drawn
-from a bivariate normal distribution. The binary covariate <code>x31</code> was
-generated from a Bernoulli distribution. The second categorical covariate
-had four levels and was drawn from a multinomial distribution, conditional on
-<code>x31</code>. The final covariates <code>x42</code>–<code>x44</code> are dummy variables representing
-levels 2–4 (level 1 is the reference).</p>
+    <p>The two continuous covariates <code>x1</code> and <code>x2</code> were
+independently drawn from a bivariate normal distribution. The binary
+covariate <code>x31</code> was generated from a Bernoulli distribution. The
+second categorical covariate had four levels and was drawn from a
+multinomial distribution, conditional on <code>x31</code>. The final covariates
+<code>x42</code>–<code>x44</code> are dummy variables representing levels 2–4
+(level 1 is the reference).</p>
 <p>Event times were generated from a mixture of two Weibull distributions with
 shape parameters 3 and 5, and scale parameters 10 and 20, respectively.
 Right censoring was imposed using censoring times drawn from an exponential
@@ -97,8 +102,8 @@ distribution with rate 3.</p>
 <p>The true regression coefficients were:
 $$\boldsymbol{\beta} = (0.15, -0.15, 0.3, 0.3, 0.3, 0.3)^\top$$</p>
 <p>The complete dataset includes six subsets: the first three contain 1,500
-observations each, and the remaining three contain 500 each. These subsets are
-indicated by the <code>group</code> variable.</p>
+observations each, and the remaining three contain 500 each. These subsets
+are indicated by the <code>group</code> variable.</p>
     </div>
 
     <div class="section level2">
