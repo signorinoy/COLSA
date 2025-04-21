@@ -45,8 +45,101 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9">
-What the package does (one paragraph).
+  <main id="main" class="col-md-9"><div class="section level1">
+<div class="page-header"><h1 id="colsa">COLSA<a class="anchor" aria-label="anchor" href="#colsa"></a>
+</h1></div>
+<!-- badges: start -->
+
+<p>To address collaborative inference for the Cox proportional hazards model in distributed data settings, we introduce COLSA (Collaborative Likelihood-based Survival Analysis). COLSA uses basis function expansion to approximate the baseline hazard and performs sequential updates to efficiently incorporate distributed data batches. Key features of COLSA include:</p>
+<ul>
+<li>
+<strong>Dynamic Basis Expansion:</strong> The number of basis functions is adaptively adjusted as new data batches arrive, balancing bias and variance.</li>
+<li>
+<strong>Sequential Model Updates:</strong> COLSA updates the model iteratively with each incoming batch, using a pre-estimated Hessian matrix for the baseline hazard to reduce bias from previous batches.</li>
+</ul>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
+<p>You can install the development version of COLSA like so:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"signorinoy/COLSA"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
+</h2>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://gongziyang.com/COLSA/">COLSA</a></span><span class="op">)</span></span></code></pre></div>
+<p>In the simulation study, we considered two continuous and two categorical covariates. The continuous covariates were independently generated from a bivariate normal distribution. The first categorical covariate was simulated from a Bernoulli distribution, while the second categorical covariate, comprising four levels, was drawn from a multinomial distribution whose probability mass function depended on the levels of the first categorical variable.</p>
+<p>Event times were generated from a mixture of Weibull distributions, with shape parameters 3 and 5 and scale parameters 10 and 20, respectively. Censoring times followed an exponential distribution with rate parameter 3. The observed event times were subject to right censoring. The true regression coefficients were set as</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝛃</mi><mo>=</mo><msup><mrow><mo stretchy="true" form="prefix">(</mo><mn>0.15</mn><mo>,</mo><mo>−</mo><mn>0.15</mn><mo>,</mo><mn>0.3</mn><mo>,</mo><mn>0.3</mn><mo>,</mo><mn>0.3</mn><mo>,</mo><mn>0.3</mn><mo stretchy="true" form="postfix">)</mo></mrow><mi>⊤</mi></msup></mrow><annotation encoding="application/x-tex">
+  \boldsymbol{\beta} = (0.15, -0.15, 0.3, 0.3, 0.3, 0.3)^{\top}
+</annotation></semantics></math></p>
+<p>A total of six datasets were generated: the first three containing 1,500 observations each, and the remaining three containing 500 observations each. The complete dataset was randomly partitioned into these six groups.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   id       time status        x1       x2 x31 x42 x43 x44 group</span></span>
+<span><span class="co">#&gt; 1  1 0.09887412      0 10.958910 5.938538   1   0   0   1     1</span></span>
+<span><span class="co">#&gt; 2  2 0.05130399      0  7.499272 6.305020   1   1   0   0     1</span></span>
+<span><span class="co">#&gt; 3  3 0.26820027      1  4.589824 4.250194   1   0   0   1     1</span></span>
+<span><span class="co">#&gt; 4  4 0.14401458      1  4.528155 5.301456   1   0   1   0     1</span></span>
+<span><span class="co">#&gt; 5  5 0.24992644      0  5.469901 5.624268   0   0   0   1     1</span></span>
+<span><span class="co">#&gt; 6  6 0.40221177      1  5.063252 6.157249   1   0   0   1     1</span></span></code></pre></div>
+<p>The COLSA procedure involves:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Optimal Basis Selection:</strong> Evaluate the Akaike Information Criterion (AIC) across a range of basis function counts and select the number that minimizes AIC.</li>
+<li>
+<strong>Initial Model Fitting:</strong> Fit the Cox model to the first data batch using the selected basis functions.</li>
+<li>
+<strong>Sequential Updating:</strong> For each subsequent batch: (a) update model parameters with the new data; (b) adjust the number of basis functions according to the rate <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>n</mi><mrow><mo>−</mo><mn>1</mn><mi>/</mi><mn>5</mn></mrow></msup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">O(n^{-1/5})</annotation></semantics></math>, where <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math> is the cumulative sample size; (c) pre-estimate the Hessian of the baseline hazard to mitigate bias in its estimation.</li>
+</ol>
+<p>This procedure enables scalable and communication-efficient survival analysis under distributed settings while preserving statistical efficiency.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">formula</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/Surv.html">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">status</span><span class="op">)</span> <span class="op">~</span> <span class="va">x1</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span> <span class="va">x31</span> <span class="op">+</span> <span class="va">x42</span> <span class="op">+</span> <span class="va">x43</span> <span class="op">+</span> <span class="va">x44</span></span>
+<span><span class="va">boundary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">time</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">df_sub</span> <span class="op">&lt;-</span> <span class="va">sim</span><span class="op">[</span><span class="va">sim</span><span class="op">$</span><span class="va">group</span> <span class="op">==</span> <span class="fl">1</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span></span>
+<span><span class="va">aics</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">n_basis</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC</a></span><span class="op">(</span><span class="fu"><a href="reference/colsa.html">colsa</a></span><span class="op">(</span><span class="va">formula</span>, <span class="va">df_sub</span>, <span class="va">n_basis</span>, <span class="va">boundary</span>, scale <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="va">n_basis_best</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.min</a></span><span class="op">(</span><span class="va">aics</span><span class="op">)</span></span>
+<span><span class="va">alpha_best</span> <span class="op">&lt;-</span> <span class="va">n_basis_best</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">df_sub</span><span class="op">)</span><span class="op">^</span><span class="fl">0.2</span></span>
+<span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/colsa.html">colsa</a></span><span class="op">(</span><span class="va">formula</span>, <span class="va">df_sub</span>, <span class="va">n_basis_best</span>, <span class="va">boundary</span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">batch</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">df_sub</span> <span class="op">&lt;-</span> <span class="va">sim</span><span class="op">[</span><span class="va">sim</span><span class="op">$</span><span class="va">group</span> <span class="op">==</span> <span class="va">batch</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">df_sub</span>, alpha <span class="op">=</span> <span class="va">alpha_best</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>The model updating process continues sequentially through all six data batches. Upon incorporating data from the 6th site, we obtain the final model fit. The summary of the fitted COLSA model is shown below:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Call:</span></span>
+<span><span class="co">#&gt; update.colsa(object = fit, newdata = df_sub, alpha = alpha_best)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Number of basis functions:  5 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;         coef exp(coef)       se      z        p    </span></span>
+<span><span class="co">#&gt; x1   0.15629   1.16917  0.01006 15.541  &lt; 2e-16 ***</span></span>
+<span><span class="co">#&gt; x2  -0.16807   0.84530  0.02121 -7.924 2.31e-15 ***</span></span>
+<span><span class="co">#&gt; x31  0.38319   1.46696  0.05689  6.735 1.64e-11 ***</span></span>
+<span><span class="co">#&gt; x42  0.28892   1.33499  0.08805  3.281  0.00103 ** </span></span>
+<span><span class="co">#&gt; x43  0.30574   1.35763  0.08028  3.808  0.00014 ***</span></span>
+<span><span class="co">#&gt; x44  0.19363   1.21364  0.07950  2.436  0.01487 *  </span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
+<span><span class="co">#&gt;     exp(coef) exp(-coef) lower .95 upper .95</span></span>
+<span><span class="co">#&gt; x1  1.1692    0.8553     1.1463    1.1924   </span></span>
+<span><span class="co">#&gt; x2  0.8453    1.1830     0.8109    0.8812   </span></span>
+<span><span class="co">#&gt; x31 1.4670    0.6817     1.3122    1.6400   </span></span>
+<span><span class="co">#&gt; x42 1.3350    0.7491     1.1234    1.5864   </span></span>
+<span><span class="co">#&gt; x43 1.3576    0.7366     1.1600    1.5890   </span></span>
+<span><span class="co">#&gt; x44 1.2136    0.8240     1.0385    1.4183</span></span></code></pre></div>
+<p>Once the final COLSA estimate is obtained, we can construct survival curves for arbitrary covariate values. As a diagnostic step, we plot the estimated baseline cumulative hazard function and compare it to the true cumulative hazard function used in the data-generating process.</p>
+<p><img src="reference/figures/README-evaluate-1.png" width="100%"></p>
+<p>The comparison demonstrates that the COLSA method can effectively recover the true baseline cumulative hazard function, even under distributed and censored data settings. The shaded region represents the 95% confidence interval of the estimated cumulative hazard function.</p>
+</div>
+</div>
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
@@ -86,7 +179,15 @@ What the package does (one paragraph).
 </ul>
 </div>
 
-
+<div class="dev-status">
+<h2 data-toc-skip>Dev status</h2>
+<ul class="list-unstyled">
+<li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
+<li><a href="https://CRAN.R-project.org/package=COLSA" class="external-link"><img src="https://www.r-pkg.org/badges/version/COLSA" alt="CRAN status"></a></li>
+<li><a href="https://github.com/signorinoy/COLSA/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/signorinoy/COLSA/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://app.codecov.io/gh/signorinoy/COLSA" class="external-link"><img src="https://codecov.io/gh/signorinoy/COLSA/graph/badge.svg" alt="Codecov test coverage"></a></li>
+</ul>
+</div>
 
   </aside>
 </div>
