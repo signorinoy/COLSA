@@ -125,7 +125,7 @@ colsa <- function(
 
   # Query stage
   res <- nlm(
-    f = objective, p = theta_init,
+    f = objective, p = theta_init, fscale = n_samples,
     time = time, status = status, x = x, boundary = boundary,
     theta = theta, hessian_prev = hessian
   )
@@ -266,7 +266,7 @@ update.colsa <- function(
   theta_init <- qr.solve(prox, theta)
 
   res <- nlm(
-    f = objective, p = theta_init,
+    f = objective, p = theta_init, fscale = n_samples,
     time = time, status = status, x = x, boundary = boundary,
     theta = theta, hessian_prev = hessian
   )
@@ -351,14 +351,22 @@ coef.colsa <- function(object, ...) {
 #' @export
 vcov.colsa <- function(object, ...) {
   if (!inherits(object, "colsa")) stop("object must be of class 'colsa'")
-  n_basis <- length(object$theta) - object$n_features
-  idx <- seq_len(n_basis)
-  # Extract submatrices for the Hessian
+  n_basis_pre <- length(object$theta) - object$n_features
+  n_basis <- tail(object$n_basis, 1)
+
   hessian <- object$hessian
-  hess_alpha <- hessian[idx, idx, drop = FALSE]
-  hess_beta <- hessian[-idx, -idx, drop = FALSE]
-  hess_gb <- hessian[idx, -idx, drop = FALSE]
-  hess_bg <- hessian[-idx, idx, drop = FALSE]
+  prox <- prox_forward(n_basis, n_basis_pre)
+  prox <- rbind(
+    cbind(prox, matrix(0, nrow(prox), object$n_features)),
+    cbind(matrix(0, object$n_features, ncol(prox)), diag(object$n_features))
+  )
+  hess <- t(prox) %*% hessian %*% prox
+
+  idx <- seq_len(n_basis)
+  hess_alpha <- hess[idx, idx, drop = FALSE]
+  hess_beta <- hess[-idx, -idx, drop = FALSE]
+  hess_gb <- hess[idx, -idx, drop = FALSE]
+  hess_bg <- hess[-idx, idx, drop = FALSE]
 
   # Compute the marginal variance-covariance matrix for coefficients
   hess_prox <- hess_beta - hess_bg %*% solve(hess_alpha) %*% hess_gb
