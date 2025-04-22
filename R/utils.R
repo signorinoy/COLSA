@@ -43,13 +43,11 @@ objective <- function(par, time, status, x, boundary, theta, hessian_prev) {
     cbind(prox, matrix(0, nrow(prox), n_features)),
     cbind(matrix(0, n_features, ncol(prox)), diag(n_features))
   )
-  par_prev <- as.vector(prox %*% par)
-
-  loss1 <- as.numeric(
-    (par_prev - theta) %*% hessian_prev %*% (par_prev - theta) / 2
-  )
-  grad1 <- as.vector(t(prox) %*% hessian_prev %*% (par_prev - theta))
+  theta <- qr.solve(prox, theta)
   hess1 <- t(prox) %*% hessian_prev %*% prox
+
+  loss1 <- as.numeric((par - theta) %*% hess1 %*% (par - theta) / 2)
+  grad1 <- as.vector(hess1 %*% (par - theta))
 
   alpha <- par[seq_len(n_basis)]
   beta <- par[(n_basis + 1):n_parameters]

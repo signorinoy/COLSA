@@ -258,7 +258,8 @@ update.colsa <- function(
       cbind(matrix(0, n_features, ncol(prox)), diag(n_features))
     )
     theta <- as.vector(prox %*% theta)
-    hessian <- prox %*% hessian %*% t(prox)
+    prox_inv <- MASS::ginv(prox)
+    hessian <- t(prox_inv) %*% hessian %*% prox_inv
   }
 
   prox <- prox_forward(n_basis, n_basis_pre)
