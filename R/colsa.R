@@ -328,20 +328,8 @@ logLik.colsa <- function(object, ...) {
 #' @export
 coef.colsa <- function(object, ...) {
   if (!inherits(object, "colsa")) stop("object must be of class 'colsa'")
-  n_basis <- tail(object$n_basis, 1)
-  n_features <- object$n_features
-  n_basis_pre <- length(object$theta) - n_features
-  prox <- prox_forward(n_basis, n_basis_pre)
-  prox <- rbind(
-    cbind(prox, matrix(0, nrow(prox), n_features)),
-    cbind(matrix(0, n_features, ncol(prox)), diag(n_features))
-  )
-  coef <- qr.solve(prox, object$theta)
-  names(coef) <- c(
-    paste0("Basis", seq_len(n_basis)),
-    names(object$theta)[-seq_len(n_basis_pre)]
-  )
-  coef
+  n_basis <- length(object$theta) - object$n_features
+  object$theta[-seq_len(n_basis)]
 }
 
 
@@ -363,21 +351,18 @@ coef.colsa <- function(object, ...) {
 #' @export
 vcov.colsa <- function(object, ...) {
   if (!inherits(object, "colsa")) stop("object must be of class 'colsa'")
-  n_basis <- tail(object$n_basis, 1)
-  n_features <- object$n_features
-  n_basis_pre <- length(object$theta) - n_features
-  prox <- prox_forward(n_basis, n_basis_pre)
-  prox <- rbind(
-    cbind(prox, matrix(0, nrow(prox), n_features)),
-    cbind(matrix(0, n_features, ncol(prox)), diag(n_features))
-  )
-  g <- t(prox) %*% prox
-  vcov <- g %*% solve(t(prox) %*% object$hessian %*% prox) %*% g
-  colnames(vcov) <- rownames(vcov) <- c(
-    paste0("Basis", seq_len(n_basis)),
-    names(object$theta)[-seq_len(n_basis_pre)]
-  )
-  vcov
+  n_basis <- length(object$theta) - object$n_features
+  idx <- seq_len(n_basis)
+  # Extract submatrices for the Hessian
+  hessian <- object$hessian
+  hess_alpha <- hessian[idx, idx, drop = FALSE]
+  hess_beta <- hessian[-idx, -idx, drop = FALSE]
+  hess_gb <- hessian[idx, -idx, drop = FALSE]
+  hess_bg <- hessian[-idx, idx, drop = FALSE]
+
+  # Compute the marginal variance-covariance matrix for coefficients
+  hess_prox <- hess_beta - hess_bg %*% solve(hess_alpha) %*% hess_gb
+  solve(hess_prox)
 }
 
 
@@ -577,13 +562,20 @@ basehaz.colsa <- function(
     seq(boundary[1], boundary[2], length.out = 100)
   }
 
-  coef <- coef(object)
+  coef <- object$theta
   n_basis <- length(coef) - object$n_features
-  alpha <- coef[seq_len(n_basis)]
+  idx <- seq_len(n_basis)
+  alpha <- coef[idx]
 
   cbh <- sapply(time, function(t) int_basehaz(t, 0, alpha, n_basis, boundary))
-  vcov_alpha <- vcov(object)[seq_len(n_basis), seq_len(n_basis)]
 
+  hess <- object$hessian
+  hess_alpha <- hess[idx, idx, drop = FALSE]
+  hess_beta <- hess[-idx, -idx, drop = FALSE]
+  hess_bg <- hess[idx, -idx, drop = FALSE]
+  hess_gb <- hess[-idx, idx, drop = FALSE]
+  vcov_alpha <- solve(hess_alpha - hess_bg %*% solve(hess_beta) %*% hess_gb)
+  
   b <- if (n_basis == 1) {
     matrix(1, nrow = length(time), ncol = 1)
   } else {
