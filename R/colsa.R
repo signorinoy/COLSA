@@ -129,6 +129,9 @@ colsa <- function(
     time = time, status = status, x = x, boundary = boundary,
     theta = theta, hessian_prev = hessian
   )
+  if (!res$code %in% c(1, 2)) {
+    stop("Optimization failed to converge")
+  }
 
   # Pre-estimation stage
   prox <- prox_forward(n_basis, n_basis_pre)
@@ -270,6 +273,9 @@ update.colsa <- function(
     time = time, status = status, x = x, boundary = boundary,
     theta = theta, hessian_prev = hessian
   )
+  if (!res$code %in% c(1, 2)) {
+    stop("Optimization failed to converge")
+  }
 
   # Pre-estimation Stage
   prox <- prox_forward(n_basis, n_basis_pre)
@@ -583,7 +589,7 @@ basehaz.colsa <- function(
   hess_bg <- hess[idx, -idx, drop = FALSE]
   hess_gb <- hess[-idx, idx, drop = FALSE]
   vcov_alpha <- solve(hess_alpha - hess_bg %*% solve(hess_beta) %*% hess_gb)
-  
+
   b <- if (n_basis == 1) {
     matrix(1, nrow = length(time), ncol = 1)
   } else {
