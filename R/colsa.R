@@ -99,13 +99,33 @@ colsa <- function(
   n_features <- ncol(x)
   n_basis_pre <- round(n_basis * scale)
   n_parameters <- n_basis_pre + n_features
+
+  # Initialize the Parameters
+  # Use flexsurvspline for initial fit and extract baseline hazard
+  init_fit <- flexsurv::flexsurvspline(formula, data = data, k = n_basis - 1)
+  bh <- flexsurv::hsurvspline(
+    time, init_fit$coefficients[seq_len(n_basis + 1)],
+    knots = init_fit$knots
+  )
+  b <- if (n_basis == 1) {
+    matrix(1, nrow = length(time), ncol = 1)
+  } else {
+    splines2::bpoly(
+      time,
+      degree = n_basis - 1, intercept = TRUE,
+      Boundary.knots = boundary
+    )
+  }
+  alpha_init <- stats::lm.fit(b, log(bh))$coefficients
+  beta_init <- init_fit$coefficients[-seq_len(n_basis + 1)]
+  theta_init <- c(alpha_init, beta_init)
+
   theta <- numeric(n_parameters)
   hessian <- matrix(0, nrow = n_parameters, ncol = n_parameters)
 
   # Query stage
-  idx <- c(seq_len(n_basis), (n_basis_pre + 1):n_parameters)
   res <- nlm(
-    f = objective, p = theta[idx],
+    f = objective, p = theta_init,
     time = time, status = status, x = x, boundary = boundary,
     theta = theta, hessian_prev = hessian
   )
@@ -228,7 +248,6 @@ update.colsa <- function(
 
   # Query Stage
   n_basis_pre <- round(n_basis * scale)
-  n_parameters <- n_basis_pre + n_features
   if (n_basis_pre > n_basis_pre_last) {
     prox <- prox_forward(n_basis_pre_last, n_basis_pre)
     prox <- rbind(
@@ -238,9 +257,16 @@ update.colsa <- function(
     theta <- as.vector(prox %*% theta)
     hessian <- prox %*% hessian %*% t(prox)
   }
-  idx <- c(seq_len(n_basis), (n_basis_pre + 1):n_parameters)
+
+  prox <- prox_forward(n_basis, n_basis_pre)
+  prox <- rbind(
+    cbind(prox, matrix(0, nrow(prox), n_features)),
+    cbind(matrix(0, n_features, ncol(prox)), diag(n_features))
+  )
+  theta_init <- qr.solve(prox, theta)
+
   res <- nlm(
-    f = objective, p = theta[idx],
+    f = objective, p = theta_init,
     time = time, status = status, x = x, boundary = boundary,
     theta = theta, hessian_prev = hessian
   )
@@ -305,12 +331,12 @@ coef.colsa <- function(object, ...) {
   n_basis <- tail(object$n_basis, 1)
   n_features <- object$n_features
   n_basis_pre <- length(object$theta) - n_features
-  prox <- prox_reverse(n_basis_pre, n_basis)
+  prox <- prox_forward(n_basis, n_basis_pre)
   prox <- rbind(
     cbind(prox, matrix(0, nrow(prox), n_features)),
     cbind(matrix(0, n_features, ncol(prox)), diag(n_features))
   )
-  coef <- as.vector(prox %*% object$theta)
+  coef <- qr.solve(prox, object$theta)
   names(coef) <- c(
     paste0("Basis", seq_len(n_basis)),
     names(object$theta)[-seq_len(n_basis_pre)]
@@ -340,18 +366,20 @@ vcov.colsa <- function(object, ...) {
   n_basis <- tail(object$n_basis, 1)
   n_features <- object$n_features
   n_basis_pre <- length(object$theta) - n_features
-  prox <- prox_reverse(n_basis_pre, n_basis)
+  prox <- prox_forward(n_basis, n_basis_pre)
   prox <- rbind(
     cbind(prox, matrix(0, nrow(prox), n_features)),
     cbind(matrix(0, n_features, ncol(prox)), diag(n_features))
   )
-  vcov <- solve(prox %*% object$hessian %*% t(prox))
+  g <- t(prox) %*% prox
+  vcov <- g %*% solve(t(prox) %*% object$hessian %*% prox) %*% g
   colnames(vcov) <- rownames(vcov) <- c(
     paste0("Basis", seq_len(n_basis)),
     names(object$theta)[-seq_len(n_basis_pre)]
   )
   vcov
 }
+
 
 #' Calculate the Akaike Information Criterion (AIC) for a 'colsa' object
 #'
@@ -373,7 +401,8 @@ vcov.colsa <- function(object, ...) {
 #' @export
 AIC.colsa <- function(object, ...) {
   if (!inherits(object, "colsa")) stop("object must be of class 'colsa'")
-  -2 * logLik(object) + 2 * length(coef(object))
+  n_parameters <- tail(object$n_basis, 1) + object$n_features
+  -2 * logLik(object) + 2 * n_parameters
 }
 
 #' Calculate Bayesian Information Criterion (BIC) for a 'colsa' Object
@@ -400,7 +429,8 @@ AIC.colsa <- function(object, ...) {
 #' @export
 BIC.colsa <- function(object, ...) {
   if (!inherits(object, "colsa")) stop("object must be of class 'colsa'")
-  -2 * logLik(object) + length(coef(object)) * log(object$n_samples)
+  n_parameters <- tail(object$n_basis, 1) + object$n_features
+  -2 * logLik(object) + n_parameters * log(object$n_samples)
 }
 #' Summarize a 'colsa' Object
 #'
@@ -476,14 +506,14 @@ print.summary.colsa <- function(
   print(x$call)
   cat("\nNumber of basis functions: ", x$n_basis, "\n\n")
 
-  n_basis <- x$n_basis
+  idx <- !grepl("^Basis", rownames(x$coefficients))
   printCoefmat(
-    x$coefficients[(n_basis + 1):nrow(x$coefficients), ],
+    x$coefficients[idx, ],
     digits = digits, signif.stars = signif.stars,
     cs.ind = 1:3, tst.ind = 4, P.values = TRUE, has.Pvalue = TRUE
   )
   print(
-    format(x$conf.int[(n_basis + 1):nrow(x$conf.int), ], digits = digits),
+    format(x$conf.int[idx, ], digits = digits),
     quote = FALSE
   )
 
@@ -547,15 +577,12 @@ basehaz.colsa <- function(
     seq(boundary[1], boundary[2], length.out = 100)
   }
 
-  n_basis_pre <- length(object$theta) - object$n_features
-  n_basis <- tail(object$n_basis, 1)
-  alpha <- object$theta[seq_len(n_basis_pre)]
-  prox <- prox_reverse(n_basis_pre, n_basis)
-  alpha <- as.vector(prox %*% alpha)
+  coef <- coef(object)
+  n_basis <- length(coef) - object$n_features
+  alpha <- coef[seq_len(n_basis)]
 
   cbh <- sapply(time, function(t) int_basehaz(t, 0, alpha, n_basis, boundary))
-  vcov_alpha <- vcov(object)[seq_len(n_basis_pre), seq_len(n_basis_pre)]
-  vcov_alpha <- prox %*% vcov_alpha %*% t(prox)
+  vcov_alpha <- vcov(object)[seq_len(n_basis), seq_len(n_basis)]
 
   b <- if (n_basis == 1) {
     matrix(1, nrow = length(time), ncol = 1)
